@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use vulkano::command_buffer::allocator::{StandardCommandBufferAllocator, StandardCommandBufferAllocatorCreateInfo};
 use vulkano::command_buffer::PrimaryAutoCommandBuffer;
+use vulkano::descriptor_set::allocator::StandardDescriptorSetAllocator;
 use vulkano::device::physical::PhysicalDevice;
 use vulkano::device::{Device, DeviceCreateInfo, Queue, QueueCreateInfo, QueueFlags};
 use vulkano::VulkanLibrary;
@@ -17,7 +18,8 @@ pub struct GPU {
     pub device: Arc<Device>,
     pub queue: Arc<Queue>,
     pub queue_family_index: u32,
-    pub command_buffer_allocator: Arc<StandardCommandBufferAllocator>
+    pub command_buffer_allocator: Arc<StandardCommandBufferAllocator>,
+    pub descriptor_set_allocator: Arc<StandardDescriptorSetAllocator>
 }
 
 
@@ -79,17 +81,27 @@ impl GPU {
 
 
 
+        /////////////////// ALLOCATORS
+
         let command_buffer_allocator = Arc::new(StandardCommandBufferAllocator::new(
             device.clone(),
             StandardCommandBufferAllocatorCreateInfo::default(),
         ));
+
+        let descriptor_set_allocator = Arc::new(StandardDescriptorSetAllocator::new(
+            device.clone(),
+            Default::default()
+        ));
+
+
 
         return Self {
             instace: instance,
             device: device,
             queue:queue,
             queue_family_index: queue_family_index,
-            command_buffer_allocator: command_buffer_allocator
+            command_buffer_allocator: command_buffer_allocator,
+            descriptor_set_allocator: descriptor_set_allocator
         };
     }
 
