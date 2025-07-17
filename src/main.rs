@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use vulkano::{buffer::{Buffer, BufferCreateInfo, BufferUsage}, command_buffer::{allocator::{StandardCommandBufferAllocator, StandardCommandBufferAllocatorCreateInfo}, AutoCommandBufferBuilder, CommandBufferUsage, CopyBufferInfo}, memory::allocator::{AllocationCreateInfo, MemoryTypeFilter, StandardMemoryAllocator}, sync};
-use vulkano::sync::GpuFuture;
 
 
 mod gpu;
@@ -45,15 +44,9 @@ fn main() {
     .expect("failed to create buffer");
 
 
-    let command_buffer_allocator = Arc::new(StandardCommandBufferAllocator::new(
-        gpu.device.clone(),
-        StandardCommandBufferAllocatorCreateInfo::default(),
-    ));
-
-
 
     let mut builder = AutoCommandBufferBuilder::primary(
-        command_buffer_allocator,
+        gpu.command_buffer_allocator.clone(),
         gpu.queue_family_index,
         CommandBufferUsage::OneTimeSubmit,
     )
@@ -65,13 +58,7 @@ fn main() {
     let command_buffer = builder.build().unwrap();
 
 
-    let future = vulkano::sync::now(gpu.device.clone())
-        .then_execute(gpu.queue.clone(), command_buffer)
-        .unwrap()
-        .then_signal_fence_and_flush()
-        .unwrap();
-
-    future.wait(None).unwrap();
+    gpu.run(command_buffer);
 
     let src_content = source_buffer.read().unwrap();
     let destination_content = dest_buffer.read().unwrap();
