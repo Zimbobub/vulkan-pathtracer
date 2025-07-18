@@ -3,26 +3,32 @@
 
 use std::sync::Arc;
 
+use vulkano::buffer::{Buffer, BufferContents, BufferCreateInfo, BufferUsage, Subbuffer};
 use vulkano::command_buffer::allocator::{StandardCommandBufferAllocator, StandardCommandBufferAllocatorCreateInfo};
 use vulkano::command_buffer::PrimaryAutoCommandBuffer;
 use vulkano::descriptor_set::allocator::StandardDescriptorSetAllocator;
 use vulkano::device::physical::PhysicalDevice;
 use vulkano::device::{Device, DeviceCreateInfo, Queue, QueueCreateInfo, QueueFlags};
+use vulkano::memory::allocator::{AllocationCreateInfo, MemoryTypeFilter, StandardMemoryAllocator};
 use vulkano::VulkanLibrary;
 use vulkano::instance::{Instance, InstanceCreateFlags, InstanceCreateInfo};
 use vulkano::sync::GpuFuture;
 
 
+
+
+
 pub struct GPU {
     pub device: Arc<Device>,
     pub queue: Arc<Queue>,
+    pub memory_allocator: Arc<StandardMemoryAllocator>,
     pub command_buffer_allocator: Arc<StandardCommandBufferAllocator>,
     pub descriptor_set_allocator: Arc<StandardDescriptorSetAllocator>
 }
 
 
 impl GPU {
-    pub fn new() -> Self {
+    pub fn init() -> Self {
         // get vulkan instance
         let library = VulkanLibrary::new().expect("no local Vulkan library/DLL");
         let instance = Instance::new(
@@ -55,7 +61,7 @@ impl GPU {
             .queue_family_properties()
             .iter()
             .enumerate()
-            .position(|(_queue_family_index, queue_family_properties)| {
+            .position(|(_, queue_family_properties)| {
                 queue_family_properties.queue_flags.contains(QueueFlags::GRAPHICS)
             })
             .expect("couldn't find a graphical queue family") as u32;
@@ -81,6 +87,9 @@ impl GPU {
 
         /////////////////// ALLOCATORS
 
+
+        let memory_allocator = Arc::new(StandardMemoryAllocator::new_default(device.clone()));
+
         let command_buffer_allocator = Arc::new(StandardCommandBufferAllocator::new(
             device.clone(),
             StandardCommandBufferAllocatorCreateInfo::default(),
@@ -96,9 +105,20 @@ impl GPU {
         return Self {
             device: device,
             queue:queue,
+            memory_allocator: memory_allocator,
             command_buffer_allocator: command_buffer_allocator,
             descriptor_set_allocator: descriptor_set_allocator
         };
+    }
+
+
+    pub fn buffer_from_iter<I, T>(&self, data: I, usage: BufferUsage, memory_type_filter: MemoryTypeFilter) -> Subbuffer<[T]> where T: BufferContents, I: IntoIterator<Item = T>, I::IntoIter: ExactSizeIterator {
+        return Buffer::from_iter(
+            self.memory_allocator.clone(),
+            BufferCreateInfo { usage: usage, ..Default::default() },
+            AllocationCreateInfo { memory_type_filter: memory_type_filter, ..Default::default() },
+            data
+        ).expect("failed to create buffer");
     }
 
 
