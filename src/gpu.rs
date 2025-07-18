@@ -14,10 +14,8 @@ use vulkano::sync::GpuFuture;
 
 
 pub struct GPU {
-    pub instace: Arc<Instance>,
     pub device: Arc<Device>,
     pub queue: Arc<Queue>,
-    pub queue_family_index: u32,
     pub command_buffer_allocator: Arc<StandardCommandBufferAllocator>,
     pub descriptor_set_allocator: Arc<StandardDescriptorSetAllocator>
 }
@@ -96,10 +94,8 @@ impl GPU {
 
 
         return Self {
-            instace: instance,
             device: device,
             queue:queue,
-            queue_family_index: queue_family_index,
             command_buffer_allocator: command_buffer_allocator,
             descriptor_set_allocator: descriptor_set_allocator
         };
